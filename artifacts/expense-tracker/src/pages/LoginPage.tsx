@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -25,6 +25,7 @@ const signupSchema = z.object({
 
 export function LoginPage({ onLogin }: LoginPageProps) {
   const [isLoginTab, setIsLoginTab] = useState(true);
+  const [, setLocation] = useLocation();
 
   const { register: registerLogin, handleSubmit: handleLoginSubmit, formState: { errors: loginErrors } } = useForm({
     resolver: zodResolver(loginSchema)
@@ -36,6 +37,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
   const onSubmit = () => {
     onLogin();
+    setLocation("/dashboard");
   };
 
   return (
