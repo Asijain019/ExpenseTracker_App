@@ -5,7 +5,7 @@ export function Sidebar() {
     <div className="w-64 bg-sidebar text-sidebar-foreground h-full min-h-screen flex flex-col p-6 sticky top-0">
       <div className="flex items-center gap-2 mb-12">
         <span className="text-2xl">💰</span>
-        <h2 className="text-2xl font-display font-bold text-white">SpendSmart</h2>
+        <h2 className="text-2xl font-display font-bold text-white">Expense Tracker</h2>
       </div>
 
       <nav className="flex flex-col gap-2 flex-1">

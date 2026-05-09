@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Expense } from "@/types/expense";
-import { loadExpenses, saveExpenses } from "@/lib/expenseStorage";
+import { api } from "@/lib/api";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { Trash2, Download, ArrowUpDown } from "lucide-react";
+import { Trash2, Download, ArrowUpDown, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
-interface ExpensesPageProps { onLogout: () => void; }
+interface ExpensesPageProps { onLogout: () => void; user: any; }
 
 const CATEGORY_COLORS: Record<string, string> = {
   Food: "#F97316",
@@ -15,23 +16,45 @@ const CATEGORY_COLORS: Record<string, string> = {
   Other: "#F59E0B"
 };
 
-export function ExpensesPage({ onLogout }: ExpensesPageProps) {
-  const [expenses, setExpenses] = useState<Expense[]>(loadExpenses);
+export function ExpensesPage({ onLogout, user }: ExpensesPageProps) {
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(true);
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
   const [dateFilter, setDateFilter] = useState<string>("All Time");
   const [sortField, setSortField] = useState<keyof Expense>("createdAt");
   const [sortAsc, setSortAsc] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { toast } = useToast();
 
-  const handleDeleteExpense = (id: string) => {
-    const updated = expenses.filter(e => e.id !== id);
-    setExpenses(updated);
-    saveExpenses(updated);
+  useEffect(() => {
+    let mounted = true;
+    api.getExpenses().then(data => {
+      if(mounted) {
+        setExpenses(data);
+        setLoading(false);
+      }
+    }).catch(() => {
+      if(mounted) {
+        toast({ title: "Failed to load data", variant: "destructive" });
+        setLoading(false);
+      }
+    });
+    return () => { mounted = false; };
+  }, [toast]);
+
+  const handleDeleteExpense = async (id: string) => {
+    try {
+      await api.deleteExpense(id);
+      setExpenses(expenses.filter(e => e.id !== id));
+      toast({ title: "Expense deleted" });
+    } catch(e) {
+      toast({ title: "Failed to delete expense", variant: "destructive" });
+    }
   };
 
   const handleDownloadCSV = () => {
     const headers = ["Name,Category,Amount,Date"];
-    const rows = expenses.map(e => `"${e.name}",${e.category},${e.amount},${new Date(e.createdAt).toLocaleDateString()}`);
+    const rows = expenses.map(e => `"${e.name}","${e.category}","$${Number(e.amount).toFixed(2)}","${new Date(e.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}"`);
     const csv = headers.concat(rows).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -67,6 +90,10 @@ export function ExpensesPage({ onLogout }: ExpensesPageProps) {
       valA = new Date(a.createdAt).getTime();
       valB = new Date(b.createdAt).getTime();
     }
+    if (sortField === "amount") {
+      valA = Number(a.amount);
+      valB = Number(b.amount);
+    }
     
     if (valA < valB) return sortAsc ? -1 : 1;
     if (valA > valB) return sortAsc ? 1 : -1;
@@ -84,146 +111,159 @@ export function ExpensesPage({ onLogout }: ExpensesPageProps) {
   // Chart Data
   const pieData = Object.entries(
     filteredExpenses.reduce((acc, exp) => {
-      acc[exp.category] = (acc[exp.category] || 0) + exp.amount;
+      acc[exp.category] = (acc[exp.category] || 0) + Number(exp.amount);
       return acc;
     }, {} as Record<string, number>)
   ).map(([name, value]) => ({ name, value }));
 
   const barData = [...filteredExpenses]
-    .sort((a, b) => b.amount - a.amount)
+    .sort((a, b) => Number(b.amount) - Number(a.amount))
     .slice(0, 5)
-    .map(e => ({ name: e.name, amount: e.amount }));
+    .map(e => ({ name: e.name, amount: Number(e.amount) }));
 
   return (
-    <AppShell onLogout={onLogout} searchQuery={searchQuery} setSearchQuery={setSearchQuery}>
+    <AppShell onLogout={onLogout} searchQuery={searchQuery} setSearchQuery={setSearchQuery} user={user}>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Expense Report</h1>
-          <p className="text-muted-foreground">Complete overview of your spending</p>
+          <h1 className="text-3xl font-display font-bold text-slate-900">Expense Report</h1>
+          <p className="text-slate-500">Complete overview of your spending history</p>
         </div>
         <button 
           onClick={handleDownloadCSV}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-border rounded-lg shadow-sm hover:bg-muted transition-colors font-medium text-sm"
+          className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl shadow-sm hover:bg-slate-50 transition-colors font-bold text-slate-700"
         >
           <Download className="w-4 h-4" />
-          Download Report
+          Export CSV
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-border">
-          <h2 className="text-lg font-display font-bold mb-4">Spending by Category</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                {pieData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[entry.name] || "#ccc"} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
+              <h2 className="text-xl font-display font-bold mb-6 text-slate-900">Spending by Category</h2>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[entry.name] || "#ccc"} stroke="none"/>
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'}} />
+                  <Legend iconType="circle" />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
 
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-border">
-          <h2 className="text-lg font-display font-bold mb-4">Top 5 Expenses</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={barData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12}} />
-              <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12}} tickFormatter={(val) => `$${val}`} />
-              <Tooltip cursor={{fill: '#f5f5f5'}} formatter={(value: number) => `$${value.toFixed(2)}`} />
-              <Bar dataKey="amount" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-2xl shadow-sm border border-border overflow-hidden">
-        <div className="p-4 border-b border-border flex flex-wrap gap-4 items-center justify-between bg-muted/30">
-          <div className="flex gap-4">
-            <select 
-              value={categoryFilter}
-              onChange={e => setCategoryFilter(e.target.value)}
-              className="px-3 py-1.5 bg-white border border-border rounded-lg text-sm"
-            >
-              <option value="All">All Categories</option>
-              <option value="Food">Food</option>
-              <option value="Travel">Travel</option>
-              <option value="Marketing">Marketing</option>
-              <option value="Utilities">Utilities</option>
-              <option value="Other">Other</option>
-            </select>
-            
-            <select 
-              value={dateFilter}
-              onChange={e => setDateFilter(e.target.value)}
-              className="px-3 py-1.5 bg-white border border-border rounded-lg text-sm"
-            >
-              <option value="All Time">All Time</option>
-              <option value="This Week">This Week</option>
-              <option value="This Month">This Month</option>
-            </select>
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
+              <h2 className="text-xl font-display font-bold mb-6 text-slate-900">Top 5 Expenses</h2>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={barData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: "#64748b"}} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: "#64748b"}} tickFormatter={(val) => `$${val}`} dx={-10}/>
+                  <Tooltip cursor={{fill: '#f8fafc'}} formatter={(value: number) => `$${value.toFixed(2)}`} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'}} />
+                  <Bar dataKey="amount" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-muted/50 text-muted-foreground font-medium border-b border-border">
-              <tr>
-                <th className="px-6 py-3 cursor-pointer hover:text-foreground" onClick={() => toggleSort("name")}>
-                  <div className="flex items-center gap-1">Expense <ArrowUpDown className="w-3 h-3" /></div>
-                </th>
-                <th className="px-6 py-3 cursor-pointer hover:text-foreground" onClick={() => toggleSort("category")}>
-                  <div className="flex items-center gap-1">Category <ArrowUpDown className="w-3 h-3" /></div>
-                </th>
-                <th className="px-6 py-3 cursor-pointer hover:text-foreground" onClick={() => toggleSort("createdAt")}>
-                  <div className="flex items-center gap-1">Date <ArrowUpDown className="w-3 h-3" /></div>
-                </th>
-                <th className="px-6 py-3 cursor-pointer hover:text-foreground" onClick={() => toggleSort("amount")}>
-                  <div className="flex items-center gap-1">Amount <ArrowUpDown className="w-3 h-3" /></div>
-                </th>
-                <th className="px-6 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedExpenses.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
-                    No expenses match your filters.
-                  </td>
-                </tr>
-              ) : (
-                sortedExpenses.map((expense) => (
-                  <tr key={expense.id} className="border-b border-border last:border-0 hover:bg-muted/20">
-                    <td className="px-6 py-4 font-medium">{expense.name}</td>
-                    <td className="px-6 py-4">
-                      <span className="px-2.5 py-1 bg-muted rounded-full text-xs font-medium">
-                        {expense.category}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-muted-foreground">
-                      {new Date(expense.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 font-bold">
-                      ${expense.amount.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button 
-                        onClick={() => handleDeleteExpense(expense.id)}
-                        className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="p-6 border-b border-slate-100 flex flex-wrap gap-4 items-center justify-between bg-slate-50">
+              <div className="flex gap-4">
+                <select 
+                  value={categoryFilter}
+                  onChange={e => setCategoryFilter(e.target.value)}
+                  className="px-4 py-2 bg-white border border-slate-200 rounded-xl font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="All">All Categories</option>
+                  <option value="Food">Food</option>
+                  <option value="Travel">Travel</option>
+                  <option value="Marketing">Marketing</option>
+                  <option value="Utilities">Utilities</option>
+                  <option value="Other">Other</option>
+                </select>
+                
+                <select 
+                  value={dateFilter}
+                  onChange={e => setDateFilter(e.target.value)}
+                  className="px-4 py-2 bg-white border border-slate-200 rounded-xl font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="All Time">All Time</option>
+                  <option value="This Week">This Week</option>
+                  <option value="This Month">This Month</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-white text-slate-500 font-bold border-b border-slate-100 uppercase tracking-wider text-xs">
+                  <tr>
+                    <th className="px-6 py-4 cursor-pointer hover:text-slate-900 transition-colors" onClick={() => toggleSort("name")}>
+                      <div className="flex items-center gap-1">Expense Name <ArrowUpDown className="w-3 h-3" /></div>
+                    </th>
+                    <th className="px-6 py-4 cursor-pointer hover:text-slate-900 transition-colors" onClick={() => toggleSort("category")}>
+                      <div className="flex items-center gap-1">Category <ArrowUpDown className="w-3 h-3" /></div>
+                    </th>
+                    <th className="px-6 py-4 cursor-pointer hover:text-slate-900 transition-colors" onClick={() => toggleSort("createdAt")}>
+                      <div className="flex items-center gap-1">Date <ArrowUpDown className="w-3 h-3" /></div>
+                    </th>
+                    <th className="px-6 py-4 cursor-pointer hover:text-slate-900 transition-colors" onClick={() => toggleSort("amount")}>
+                      <div className="flex items-center gap-1">Amount <ArrowUpDown className="w-3 h-3" /></div>
+                    </th>
+                    <th className="px-6 py-4 text-right">Actions</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                </thead>
+                <tbody>
+                  {sortedExpenses.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-12 text-center">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
+                          <svg className="w-8 h-8 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-900 mb-1">No expenses found</h3>
+                        <p className="text-slate-500">Try adjusting your filters or search query.</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    sortedExpenses.map((expense) => (
+                      <tr key={expense.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors group">
+                        <td className="px-6 py-5 font-bold text-slate-900">{expense.name}</td>
+                        <td className="px-6 py-5">
+                          <span className="px-3 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold uppercase tracking-wider">
+                            {expense.category}
+                          </span>
+                        </td>
+                        <td className="px-6 py-5 text-slate-500 font-medium">
+                          {new Date(expense.createdAt).toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'})}
+                        </td>
+                        <td className="px-6 py-5 font-display font-bold text-base text-slate-900">
+                          ${Number(expense.amount).toFixed(2)}
+                        </td>
+                        <td className="px-6 py-5 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => handleDeleteExpense(expense.id)}
+                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors inline-flex"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
     </AppShell>
   );
 }

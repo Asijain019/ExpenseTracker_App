@@ -1,14 +1,16 @@
 import { useLocation, Link } from "wouter";
 import { LayoutDashboard, Receipt, BarChart2, Settings, LogOut } from "lucide-react";
+import { AvatarDisplay } from "./AvatarDisplay";
 
 interface AppShellProps {
   children: React.ReactNode;
   onLogout: () => void;
   searchQuery?: string;
   setSearchQuery?: (q: string) => void;
+  user?: any;
 }
 
-export function AppShell({ children, onLogout, searchQuery, setSearchQuery }: AppShellProps) {
+export function AppShell({ children, onLogout, searchQuery, setSearchQuery, user }: AppShellProps) {
   const [location] = useLocation();
   
   const navItems = [
@@ -24,7 +26,7 @@ export function AppShell({ children, onLogout, searchQuery, setSearchQuery }: Ap
       <div className="w-64 bg-sidebar text-sidebar-foreground min-h-screen flex flex-col p-6 sticky top-0 shrink-0">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3 mb-12 cursor-pointer">
-          <img src="/logo.png" alt="Expense Tracker" className="w-10 h-10 object-contain" />
+          <img src="/logo.png" alt="Expense Tracker" className="w-10 h-10 object-contain filter brightness-0 invert" />
           <span className="text-lg font-display font-bold text-white leading-tight">Expense<br/>Tracker</span>
         </Link>
 
@@ -82,7 +84,8 @@ export function AppShell({ children, onLogout, searchQuery, setSearchQuery }: Ap
             </div>
           ) : <div />}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">A</div>
+            {user?.name && <span className="text-sm font-medium text-foreground">{user.name}</span>}
+            <AvatarDisplay avatarId={user?.avatar || "1"} size={36} />
           </div>
         </div>
         {children}

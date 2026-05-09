@@ -15,25 +15,30 @@ const CategoryIcons = {
 };
 
 const CategoryColors = {
-  Food: "bg-coral-100 text-coral-700 border-l-coral-500",
-  Travel: "bg-sky-100 text-sky-700 border-l-sky-500",
-  Marketing: "bg-purple-100 text-purple-700 border-l-purple-500",
-  Utilities: "bg-teal-100 text-teal-700 border-l-teal-500",
-  Other: "bg-amber-100 text-amber-700 border-l-amber-500"
+  Food: "bg-orange-50 text-orange-600 border-l-orange-500 group-hover:border-orange-500",
+  Travel: "bg-sky-50 text-sky-600 border-l-sky-500 group-hover:border-sky-500",
+  Marketing: "bg-purple-50 text-purple-600 border-l-purple-500 group-hover:border-purple-500",
+  Utilities: "bg-teal-50 text-teal-600 border-l-teal-500 group-hover:border-teal-500",
+  Other: "bg-amber-50 text-amber-600 border-l-amber-500 group-hover:border-amber-500"
+};
+
+const IconBgColors = {
+  Food: "bg-orange-100",
+  Travel: "bg-sky-100",
+  Marketing: "bg-purple-100",
+  Utilities: "bg-teal-100",
+  Other: "bg-amber-100"
 };
 
 export function ExpenseList({ expenses, onDelete }: ExpenseListProps) {
   if (expenses.length === 0) {
     return (
-      <div className="bg-white rounded-2xl p-12 text-center border border-border flex flex-col items-center">
-        <svg className="w-32 h-32 text-muted-foreground/30 mb-4" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="50" cy="50" r="40" />
-          <path d="M30 60 Q 50 80 70 60" />
-          <circle cx="35" cy="40" r="5" fill="currentColor" />
-          <circle cx="65" cy="40" r="5" fill="currentColor" />
-        </svg>
-        <h3 className="text-xl font-display font-bold text-foreground">No expenses found</h3>
-        <p className="text-muted-foreground mt-2">Add some expenses to get started or adjust your search.</p>
+      <div className="bg-white rounded-3xl p-12 text-center border border-slate-200 flex flex-col items-center">
+        <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+          <svg className="w-10 h-10 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <h3 className="text-xl font-display font-bold text-slate-900">No expenses found</h3>
+        <p className="text-slate-500 mt-2 font-medium">Add some expenses to get started or adjust your search.</p>
       </div>
     );
   }
@@ -42,34 +47,36 @@ export function ExpenseList({ expenses, onDelete }: ExpenseListProps) {
     <div className="space-y-3">
       {expenses.map((expense) => {
         const Icon = CategoryIcons[expense.category] || Box;
-        const colorClass = CategoryColors[expense.category] || "border-l-gray-500";
+        const colorClass = CategoryColors[expense.category] || "border-l-slate-200";
+        const iconBg = IconBgColors[expense.category] || "bg-slate-100";
         
         return (
-          <div key={expense.id} className={`bg-white border border-border border-l-4 rounded-xl p-4 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow ${colorClass}`} data-testid={`card-expense-${expense.id}`}>
+          <div key={expense.id} className={`group bg-white border border-slate-200 border-l-[6px] rounded-2xl p-4 flex items-center justify-between transition-all hover:shadow-md hover:-translate-y-0.5 ${colorClass}`} data-testid={`card-expense-${expense.id}`}>
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-muted rounded-xl text-foreground">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${iconBg}`}>
                 <Icon className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="font-semibold text-foreground">{expense.name}</h4>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs px-2 py-0.5 bg-muted rounded-full text-muted-foreground font-medium">
+                <h4 className="font-bold text-slate-900 text-base">{expense.name}</h4>
+                <div className="flex items-center gap-3 mt-1">
+                  <span className="text-[10px] uppercase tracking-wider font-bold opacity-70">
                     {expense.category}
                   </span>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(expense.createdAt).toLocaleDateString()}
+                  <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                  <span className="text-[11px] font-medium text-slate-500">
+                    {new Date(expense.createdAt).toLocaleDateString(undefined, {month:'short', day:'numeric'})}
                   </span>
                 </div>
               </div>
             </div>
             
             <div className="flex items-center gap-6">
-              <span className="text-lg font-bold text-foreground">
-                ${expense.amount.toFixed(2)}
+              <span className="text-lg font-display font-bold text-slate-900">
+                ${Number(expense.amount).toFixed(2)}
               </span>
               <button 
                 onClick={() => onDelete(expense.id)}
-                className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100"
                 data-testid={`button-delete-${expense.id}`}
               >
                 <Trash2 className="w-4 h-4" />
