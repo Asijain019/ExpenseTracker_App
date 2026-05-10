@@ -38,7 +38,7 @@ const __dirname = path.dirname(__filename);
 app.use("/api", router);
 
 // Serve static files from the React frontend app
-const distPath = path.resolve(__dirname, "../../client/dist");
+const distPath = path.resolve(__dirname, "../../client/dist/public");
 app.use(express.static(distPath));
 
 // Handle React routing, return all requests to React app (Catch-all)
