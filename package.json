@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "pnpm -r --parallel run dev",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
-    "typecheck": "pnpm -r --if-present run typecheck"
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "start": "pnpm -F @workspace/api-server start"
   },
   "private": true,
   "devDependencies": {
