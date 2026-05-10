@@ -3,6 +3,13 @@
 **Live Demo**: [https://expensetracker-app-a45t.onrender.com](https://expensetracker-app-a45t.onrender.com)
 
 A high-performance, visually stunning personal finance dashboard built with a modern **Glassmorphism UI**. Track your spending, manage categories, and visualize your financial health with real-time analytics.
+# demo Video 
+
+
+https://github.com/user-attachments/assets/4d45148b-bcb3-40a1-923c-b3dd94c5b05f
+
+
+
 
 ## ✨ Features
 
