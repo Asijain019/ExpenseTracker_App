@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { db, expensesTable } from "../db";
 import { authMiddleware, type AuthRequest } from "../middlewares/auth";
 
@@ -13,7 +13,7 @@ router.get("/", async (req: AuthRequest, res): Promise<void> => {
       .select()
       .from(expensesTable)
       .where(eq(expensesTable.userId, req.userId!))
-      .orderBy(expensesTable.createdAt);
+      .orderBy(desc(expensesTable.createdAt));
     
     res.json(expenses);
   } catch (error) {
@@ -23,7 +23,7 @@ router.get("/", async (req: AuthRequest, res): Promise<void> => {
 });
 
 router.post("/", async (req: AuthRequest, res): Promise<void> => {
-  const { name, amount, category } = req.body;
+  const { name, amount, category, createdAt } = req.body;
 
   if (!name || amount == null || !category) {
     res.status(400).json({ error: "Missing required fields" });
@@ -31,11 +31,20 @@ router.post("/", async (req: AuthRequest, res): Promise<void> => {
   }
 
   try {
+    const dateToSave = createdAt ? new Date(createdAt) : new Date();
+    
+    // Prevent future dates
+    if (dateToSave > new Date()) {
+      res.status(400).json({ error: "Cannot add expenses for future dates" });
+      return;
+    }
+
     const [expense] = await db.insert(expensesTable).values({
       userId: req.userId!,
       name,
       amount: amount.toString(),
       category,
+      createdAt: dateToSave
     }).returning();
 
     res.status(201).json(expense);

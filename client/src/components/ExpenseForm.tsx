@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -13,17 +14,26 @@ const expenseSchema = z.object({
 type ExpenseFormData = z.infer<typeof expenseSchema>;
 
 interface ExpenseFormProps {
-  onAdd: (expense: Omit<Expense, "id" | "createdAt">) => void;
+  onAdd: (expense: Omit<Expense, "id">) => void;
+  selectedDate: Date;
 }
 
-export function ExpenseForm({ onAdd }: ExpenseFormProps) {
+export function ExpenseForm({ onAdd, selectedDate }: ExpenseFormProps) {
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema)
   });
 
   const onSubmit = async (data: ExpenseFormData) => {
-    await onAdd(data);
-    reset();
+    // Force the selectedDate into the payload to ensure it syncs correctly
+    await onAdd({
+      ...data,
+      createdAt: selectedDate
+    });
+    reset({
+      name: "",
+      amount: undefined as any,
+      category: "Food"
+    });
   };
 
   return (

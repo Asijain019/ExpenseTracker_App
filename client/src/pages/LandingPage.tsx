@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { Logo } from "@/components/Logo";
+import { TrendingUp, CreditCard, Globe, BarChart3, ShieldCheck, Zap, Calendar, Bot, FileDown } from "lucide-react";
 
 const HERO_IMG = "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=900&q=80";
 const FEATURE_IMG = "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80";
@@ -94,7 +95,9 @@ export function LandingPage() {
           </div>
           {/* Floating badge 1 */}
           <div className="absolute -top-5 -left-5 bg-white rounded-2xl shadow-xl border border-slate-100 px-4 py-3 flex items-center gap-3">
-            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-lg">💰</div>
+            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-green-600" />
+            </div>
             <div>
               <p className="text-xs text-slate-500 font-medium">Monthly savings</p>
               <p className="text-sm font-bold text-slate-900">+$2,450</p>
@@ -117,10 +120,10 @@ export function LandingPage() {
       <section id="features" className="bg-slate-50 border-y border-slate-100 py-12">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8">
           {[
-            { icon: "💳", label: "Smart Tracking", desc: "Log & categorize instantly" },
-            { icon: "🌍", label: "15+ Currencies", desc: "Real-time exchange rates" },
-            { icon: "📊", label: "Visual Analytics", desc: "Charts that make sense" },
-            { icon: "🔒", label: "Bank Security", desc: "Encrypted at rest & in transit" },
+            { icon: <CreditCard className="w-8 h-8 text-violet-600" />, label: "Smart Tracking", desc: "Log & categorize instantly" },
+            { icon: <Globe className="w-8 h-8 text-sky-600" />, label: "15+ Currencies", desc: "Real-time exchange rates" },
+            { icon: <BarChart3 className="w-8 h-8 text-indigo-600" />, label: "Visual Analytics", desc: "Charts that make sense" },
+            { icon: <ShieldCheck className="w-8 h-8 text-emerald-600" />, label: "Bank Security", desc: "Encrypted at rest & in transit" },
           ].map((f) => (
             <div key={f.label} className="flex items-start gap-4">
               <div className="text-3xl mt-0.5">{f.icon}</div>
@@ -205,10 +208,10 @@ export function LandingPage() {
             </h2>
             <div className="space-y-5">
               {[
-                { icon: "⚡", title: "Instant setup", desc: "Create your account and add your first expense in under 60 seconds. No tutorials needed." },
-                { icon: "📅", title: "Calendar view", desc: "See your expenses plotted on a calendar. Spot heavy-spending days at a glance." },
-                { icon: "🤖", title: "Smart insights", desc: "Our AI analysis highlights unusual spending, top categories, and savings opportunities." },
-                { icon: "📤", title: "CSV export", desc: "Export all your expenses anytime. Your data, always yours — never locked in." },
+                { icon: <Zap className="w-6 h-6 text-violet-600" />, title: "Instant setup", desc: "Create your account and add your first expense in under 60 seconds. No tutorials needed." },
+                { icon: <Calendar className="w-6 h-6 text-pink-500" />, title: "Calendar view", desc: "See your expenses plotted on a calendar. Spot heavy-spending days at a glance." },
+                { icon: <Bot className="w-6 h-6 text-blue-500" />, title: "Smart insights", desc: "Our AI analysis highlights unusual spending, top categories, and savings opportunities." },
+                { icon: <FileDown className="w-6 h-6 text-amber-500" />, title: "CSV export", desc: "Export all your expenses anytime. Your data, always yours — never locked in." },
               ].map((item) => (
                 <div key={item.title} className="flex items-start gap-4">
                   <div className="text-2xl mt-0.5 shrink-0">{item.icon}</div>

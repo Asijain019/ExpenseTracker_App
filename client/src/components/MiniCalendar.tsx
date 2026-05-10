@@ -4,6 +4,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface MiniCalendarProps {
   expenses: Expense[];
+  selectedDate: Date;
+  onSelectDate: (date: Date) => void;
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -17,11 +19,16 @@ const CATEGORY_COLORS: Record<string, string> = {
 const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-export function MiniCalendar({ expenses }: MiniCalendarProps) {
+export function MiniCalendar({ expenses, selectedDate, onSelectDate }: MiniCalendarProps) {
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+
+  // Helper to check if a specific day matches the selectedDate
+  const isSelected = (day: number) => 
+    selectedDate.getDate() === day && 
+    selectedDate.getMonth() === viewMonth && 
+    selectedDate.getFullYear() === viewYear;
 
   const firstDay = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
@@ -48,14 +55,14 @@ export function MiniCalendar({ expenses }: MiniCalendarProps) {
   const prevMonth = () => {
     if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); }
     else setViewMonth(m => m - 1);
-    setSelectedDay(null);
   };
   const nextMonth = () => {
     if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0); }
     else setViewMonth(m => m + 1);
-    setSelectedDay(null);
   };
 
+  const isViewMonthSelected = selectedDate.getMonth() === viewMonth && selectedDate.getFullYear() === viewYear;
+  const selectedDay = isViewMonthSelected ? selectedDate.getDate() : null;
   const selectedExps = selectedDay ? (expensesByDay[selectedDay] || []) : [];
   const isToday = (day: number) =>
     day === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear();
@@ -92,12 +99,15 @@ export function MiniCalendar({ expenses }: MiniCalendarProps) {
           const dot = getDotColor(day);
           const selected = selectedDay === day;
           const today_ = isToday(day);
+          const isFuture = new Date(viewYear, viewMonth, day) > today;
           return (
             <button
               key={day}
-              onClick={() => setSelectedDay(selected ? null : day)}
+              disabled={isFuture}
+              onClick={() => onSelectDate(new Date(viewYear, viewMonth, day))}
               className={`relative aspect-square flex flex-col items-center justify-center rounded-xl text-sm font-medium transition-all
                 ${selected ? "bg-purple-600 text-white shadow-lg shadow-purple-500/30" : today_ ? "bg-purple-100 text-purple-700 font-bold" : "hover:bg-slate-100 text-slate-700"}
+                ${isFuture ? "opacity-30 cursor-not-allowed" : ""}
               `}
             >
               <span className={`text-xs ${selected ? "font-bold" : ""}`}>{day}</span>
