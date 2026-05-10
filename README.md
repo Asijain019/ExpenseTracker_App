@@ -1,5 +1,7 @@
 # 💎 Modern Expense Tracker Dashboard
 
+**Live Demo**: [https://expensetracker-app-a45t.onrender.com](https://expensetracker-app-a45t.onrender.com)
+
 A high-performance, visually stunning personal finance dashboard built with a modern **Glassmorphism UI**. Track your spending, manage categories, and visualize your financial health with real-time analytics.
 
 ## ✨ Features
@@ -59,9 +61,9 @@ A high-performance, visually stunning personal finance dashboard built with a mo
 
 ## 📂 Project Structure
 
-- `client/`: React frontend source code.
-- `server/`: Express API server.
-- `lib/db/`: Shared database schema and Drizzle configuration.
+- `client/`: React frontend source code and UI assets.
+- `server/`: Express API server and database schema definitions.
+- `.env.example`: Template for environment variables.
 
 ---
 
