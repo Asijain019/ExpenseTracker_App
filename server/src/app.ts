@@ -41,8 +41,8 @@ app.use("/api", router);
 const distPath = path.resolve(__dirname, "../../client/dist");
 app.use(express.static(distPath));
 
-// Handle React routing, return all requests to React app
-app.get("(.*)", (req, res) => {
+// Handle React routing, return all requests to React app (Catch-all)
+app.use((req, res) => {
   res.sendFile(path.resolve(distPath, "index.html"));
 });
 
